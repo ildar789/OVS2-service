@@ -22,7 +22,9 @@
 
 const express = require('express');
 const session = require('express-session');
-const { RedisStore } = require('connect-redis');
+// В connect-redis v7+ при использовании CommonJS (require) класс
+// экспортируется как `default`, а не как именованный экспорт.
+const RedisStore = require('connect-redis').default;
 const { createClient } = require('redis');
 const { Pool } = require('pg');
 const os = require('os');
