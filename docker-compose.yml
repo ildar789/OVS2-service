@@ -1,0 +1,70 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: lab3
+      POSTGRES_PASSWORD: lab3pass
+      POSTGRES_DB: lab3db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lab3 -d lab3db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ---- Backend-узлы: строго идентичный образ, разный INSTANCE_ID/порт ----
+  app1:
+    build: ./app
+    restart: unless-stopped
+    environment:
+      INSTANCE_ID: node-1
+      PORT: 3000
+      DATABASE_URL: postgresql://lab3:lab3pass@postgres:5432/lab3db
+      REDIS_URL: redis://redis:6379
+      SESSION_SECRET: super-secret-change-me
+    ports:
+      - "3001:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  app2:
+    build: ./app
+    restart: unless-stopped
+    environment:
+      INSTANCE_ID: node-2
+      PORT: 3000
+      DATABASE_URL: postgresql://lab3:lab3pass@postgres:5432/lab3db
+      REDIS_URL: redis://redis:6379
+      SESSION_SECRET: super-secret-change-me
+    ports:
+      - "3002:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Можно поднять третий узел аналогично (app3), просто скопировав блок
+  # app2 и изменив INSTANCE_ID и внешний порт.
+
+volumes:
+  pgdata:
+  redisdata:

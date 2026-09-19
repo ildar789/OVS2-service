@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Lab3 Demo App</title>
+<style>
+  body { font-family: system-ui, Arial, sans-serif; max-width: 780px; margin: 40px auto; padding: 0 16px; color: #222; }
+  .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; }
+  .node { background: #eef6ff; border-color: #b6d9ff; }
+  .session { background: #f3fff0; border-color: #bfe8b3; }
+  .warn { background: #fff4e6; border-color: #ffcf8a; }
+  table { width: 100%; border-collapse: collapse; }
+  td, th { padding: 6px 8px; border-bottom: 1px solid #eee; text-align: left; font-size: 14px; }
+  code { background: #f2f2f2; padding: 1px 5px; border-radius: 4px; }
+  form { margin-top: 10px; display: flex; gap: 8px; }
+  input[type=text] { flex: 1; padding: 8px; }
+  button { padding: 8px 14px; }
+</style>
+</head>
+<body>
+  <h1>Демо-приложение — лабораторная работа №3</h1>
+
+  <div class="card node">
+    <h3>Узел, обработавший этот запрос</h3>
+    <table>
+      <tr><th>instance_id</th><td><code><%= node.instance_id %></code></td></tr>
+      <tr><th>hostname</th><td><code><%= node.hostname %></code></td></tr>
+      <tr><th>pid</th><td><code><%= node.pid %></code></td></tr>
+      <tr><th>port</th><td><code><%= node.port %></code></td></tr>
+      <tr><th>server_time</th><td><%= node.server_time %></td></tr>
+      <tr><th>client_ip (по мнению приложения)</th><td><%= node.client_ip %></td></tr>
+      <tr><th>X-Forwarded-For</th><td><%= node.forwarded_for || '—' %></td></tr>
+    </table>
+    <p>JSON-версия: <a href="/api/info">/api/info</a> · health-check: <a href="/api/health">/api/health</a></p>
+  </div>
+
+  <div class="card session">
+    <h3>Сессия (хранится в Redis, общем для всех узлов)</h3>
+    <table>
+      <tr><th>session id</th><td><code><%= session.id %></code></td></tr>
+      <tr><th>узел, впервые создавший сессию</th><td><code><%= session.firstSeenNode %></code></td></tr>
+      <tr><th>число визитов в рамках сессии</th><td><%= session.visits %></td></tr>
+    </table>
+    <p>Обновите страницу несколько раз (в т.ч. через балансировщик) — счётчик визитов
+       продолжит расти и «узел создания сессии» не изменится, даже если запросы будут
+       обрабатываться разными backend-узлами.</p>
+  </div>
+
+  <% if (dbError) { %>
+  <div class="card warn">
+    <strong>Внимание:</strong> <%= dbError %>
+  </div>
+  <% } %>
+
+  <div class="card">
+    <h3>Общие заметки (хранятся в PostgreSQL, общем для всех узлов)</h3>
+    <form method="POST" action="/notes">
+      <input type="text" name="text" placeholder="Новая заметка..." required>
+      <button type="submit">Добавить</button>
+    </form>
+    <table>
+      <tr><th>#</th><th>текст</th><th>создано узлом</th><th>время</th></tr>
+      <% notes.forEach(function(n) { %>
+      <tr>
+        <td><%= n.id %></td>
+        <td><%= n.text %></td>
+        <td><code><%= n.created_by_node %></code></td>
+        <td><%= new Date(n.created_at).toLocaleString('ru-RU') %></td>
+      </tr>
+      <% }) %>
+    </table>
+    <p>JSON-версия: <a href="/api/notes">/api/notes</a> · демонстрация async: <a href="/api/async-task">/api/async-task</a></p>
+  </div>
+</body>
+</html>
